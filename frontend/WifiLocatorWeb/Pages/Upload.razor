@@ -1,0 +1,151 @@
+﻿@page "/upload"
+@using Microsoft.AspNetCore.Components.Forms
+@using WifiLocatorWeb.Models
+@inject HttpClient Http
+@inject WifiLocatorWeb.Api.ApiClient ApiClient
+
+<PageTitle>File Upload</PageTitle>
+
+
+<div class="upload-main-container">
+    <div class="upload-container">
+        <h3 class="mt-4 text-center">File Upload</h3>
+        <div class="upload-box">
+
+            <div class="drop-zone">
+                <p>
+                    Drag and drop your CSV file here, or click to browse
+                </p>
+                <InputFile OnChange="OnFileChange" accept=".csv,.csv.gz" multiple
+                style="opacity:0; position:absolute; top:0; left:0; width:100%; height:100%; cursor:pointer;" />
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(UploadErrorMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                @UploadErrorMessage
+            </div>
+        }
+    </div>
+
+    <div class="upload-status">
+        <h3 class="mt-4 text-center">File Processing Status</h3>
+        <div class="file-card">
+            <div class="file-card-header">
+                <h4 class="file-header">File name</h4>
+                <h4 class="file-header">Processed records</h4>
+                <h4 class="file-header">Status</h4>
+            </div>
+            @if (uploadStatuses.Any())
+            {
+                @foreach (var status in uploadStatuses)
+                {
+                    <div class="status-card">
+                        <div class="status-content">
+                            <p><strong>@status.FileName</strong></p>
+                            <p>@status.ProcessedRecords</p>
+                            <p>
+                                @if(status.Error){
+                                    <span class="text-error">Proccessing failed</span>
+                                }else{
+                                    @if (status.IsCompleted)
+                                    {
+                                        <span class="text-success">Completed</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-processing">Processing...</span>
+                                    }
+                                }
+
+                            </p>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+    </div>
+</div>
+
+
+@code {
+    // progress details for each uploaded file
+    private List<UploadStatus> uploadStatuses = new List<UploadStatus>();
+    private string UploadErrorMessage { get; set; } = "";
+
+    private async Task OnFileChange(InputFileChangeEventArgs e)
+    {
+
+        var files = e.GetMultipleFiles();
+        if (files == null || files.Count == 0)
+        {
+            UploadErrorMessage = "No file selected.";
+            return;
+        }
+
+        foreach(var file in files){
+            var fileName = file.Name.ToLowerInvariant();
+
+            if (!(fileName.EndsWith(".csv") || fileName.EndsWith(".csv.gz")))
+            {
+                UploadErrorMessage = "Invalid file type. Please upload a .csv or .csv.gz file.";
+                return;
+            }
+            await UploadFile(file);
+        }
+        
+
+        UploadErrorMessage = "";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task UploadFile(IBrowserFile file)
+    {
+        try
+        {
+            var jsonResponse = await ApiClient.UploadFileAsync(file);
+            if (jsonResponse != null)
+            {
+                var uploadStatus = new UploadStatus
+                    {
+                        Id = jsonResponse.fileId,
+                        FileName = file.Name,
+                        ProcessedRecords = 0,
+                        IsCompleted = false
+                    };
+
+                uploadStatuses.Add(uploadStatus);
+                _ = MonitorUploadProgress(uploadStatus); 
+            }
+        }
+        catch (Exception ex)
+        {
+            UploadErrorMessage = ex.Message;
+        }
+    }
+
+    private async Task MonitorUploadProgress(UploadStatus status)
+    {
+        while (!status.IsCompleted)
+        {
+            await Task.Delay(300); 
+
+            try
+            {
+                var apiResponse = await ApiClient.GetStatusAsync(status.Id);
+                if (apiResponse != null)
+                {
+                    status.ProcessedRecords = apiResponse.ProcessedRecords;
+                    status.IsCompleted = apiResponse.IsCompleted;
+                }
+            }
+            catch (Exception)
+            {
+                status.Error = true;
+            }
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

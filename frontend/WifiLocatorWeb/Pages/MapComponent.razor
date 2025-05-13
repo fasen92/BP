@@ -1,0 +1,202 @@
+﻿@page "/"
+@using WifiLocatorWeb.Models
+@using System.Globalization
+@inject IJSRuntime JS
+@inject HttpClient Http
+@inject WifiLocatorWeb.Api.ApiClient ApiClient
+
+<div id="mainContainer">
+    <div id="sidebarContainer">
+        <div id="sidebarFilter" class="sidebar-filter">
+            <div class="filter-group">
+                <h4>Latitude</h4>
+                <div class="coordinate-row">
+                    <input type="text" id="latitude1" placeholder="Latitude1"
+                    disabled="@(!IsSearchWorldwide)" @bind="latitude1"
+                    oninput="validateCoordinateInput(this)" min="-90" max="90" step="any">
+                    <input type="text" id="latitude2" placeholder="Latitude2"
+                    disabled="@(!IsSearchWorldwide)" @bind="latitude2"
+                    oninput="validateCoordinateInput(this)" min="-90" max="90" step="any">
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <h4>Longitude</h4>
+                <div class="coordinate-row">
+                    <input type="text" id="longitude1" placeholder="Longitude1"
+                    disabled="@(!IsSearchWorldwide)" @bind="longitude1"
+                    oninput="validateCoordinateInput(this)" min="-180" max="180" step="any">
+                    <input type="text" id="longitude2" placeholder="Longitude2"
+                    disabled="@(!IsSearchWorldwide)" @bind="longitude2"
+                    oninput="validateCoordinateInput(this)" min="-180" max="180" step="any">
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label for="searchWorldwide" class="inline-label">
+                    <input type="checkbox" id="searchWorldwide" @bind="IsSearchWorldwide">
+                    <span>Search worldwide</span>
+                </label>
+            </div>
+
+            <div class="filter-group">
+                <h4>SSID</h4>
+                <input type="text" @bind="SearchSSID" id="ssidInput" placeholder="WifiName">
+            </div>
+
+            <div class="filter-group">
+                <h4>BSSID</h4>
+                <input type="text" @bind="SearchBSSID" id="bssidInput" placeholder="6a:b7:c9:ac:f8:45"
+                pattern="^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"
+                title="Enter a valid BSSID (e.g., 6a:b7:c9:ac:f8:45)">
+            </div>
+
+            <div class="filter-group">
+                <h4>Date</h4>
+                <div class="date-range">
+                    <input type="date" @bind="DateStart" id="dateStart">
+                    <span>to</span>
+                    <input type="date" @bind="DateEnd" id="dateEnd">
+                </div>
+            </div>
+
+            <button @onclick="Search" class="btn-sidebar" id="searchButton">Search</button>
+            <button @onclick="Reset" class="btn-sidebar" id="resetButton">Reset</button>
+            <button @onclick="ToggleSidebar" class="btn-sidebar" id="toggleSidebarButton">
+                @(IsSidebarOpen ? "Hide WiFi Points" : "Show WiFi Points")
+            </button>
+        </div>
+
+        <div id="searchPointsPanel" class="sidebar-panel @(IsSidebarOpen ? "open" : "closed")">
+            <div class="sidebar-header">
+                <h5>Search Points</h5>
+            </div>
+            <div class="sidebar-body">
+                <ul id="searchPointsList" class="list-group">
+                    @foreach (var point in wifiShowList)
+                    {
+                        <li class="list-group-item" title="@($"{point.Ssid}\n{point.Bssid}\n{point.Address}")"
+                        @onclick="@(() => GoToPointByBssid(point.Bssid))">
+                            <strong>@point.Ssid</strong>  <br />
+                            @point.Bssid <br />
+                            @point.Address
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+</div>
+
+@code {
+    // Filter and map properties
+    private string SearchSSID { get; set; } = "";
+    private string SearchBSSID { get; set; } = "";
+    private DateTime? DateStart { get; set; }
+    private DateTime? DateEnd { get; set; }
+    private bool IsSearchWorldwide { get; set; } = false;
+    private bool IsSidebarOpen { get; set; } = false;
+    private string latitude1 { get; set; } = "";
+    private string latitude2 { get; set; } = "";
+    private string longitude1 { get; set; } = "";
+    private string longitude2 { get; set; } = "";
+
+    double initLatitude1 = 49.2069;
+    double initLatitude2 = 49.2393;
+    double initLongitude1 = 16.5385;
+    double initLongitude2 = 16.6342;
+
+    private List<WifiListModel> wifiShowList { get; set; } = new();
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var objRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("initializeMap", "map", 49.22310638, 16.58632278, 14);
+            await JS.InvokeVoidAsync("registerSearchPointsCallback", objRef);
+
+            string baseUrl = Http.BaseAddress?.ToString() ?? "http://localhost:7147/api/Wifi/";
+            await JS.InvokeVoidAsync("setApiBaseUrl", baseUrl);
+
+            List<WifiDisplayModel>? wifiList = wifiList = await ApiClient.GetWifiModelsInRangeAsync(
+                initLatitude1,
+                initLongitude1,
+                initLatitude2,
+                initLongitude2);
+            if (wifiList != null && wifiList.Count > 0)
+            {
+                await JS.InvokeVoidAsync("addWifiModels", wifiList);
+            }
+
+        }
+    }
+
+    private async Task Search()
+    {
+        if (!string.IsNullOrWhiteSpace(latitude1) && !string.IsNullOrWhiteSpace(latitude2) &&
+                !string.IsNullOrWhiteSpace(longitude1) && !string.IsNullOrWhiteSpace(longitude2))
+        {
+            if (double.TryParse(latitude1, CultureInfo.InvariantCulture, out double lat1) &&
+                double.TryParse(latitude2, CultureInfo.InvariantCulture, out double lat2) &&
+                double.TryParse(longitude1, CultureInfo.InvariantCulture, out double lng1) &&
+                double.TryParse(longitude2, CultureInfo.InvariantCulture, out double lng2))
+            {
+                await JS.InvokeVoidAsync("filterWifiPoints",
+                    string.IsNullOrWhiteSpace(SearchSSID) ? null : SearchSSID,
+                    string.IsNullOrWhiteSpace(SearchBSSID) ? null : SearchBSSID,
+                    DateStart.HasValue ? DateStart.Value.ToString("O") : null,
+                    DateEnd.HasValue ? DateEnd.Value.ToString("O") : null,
+                    lat1,
+                    lat2,
+                    lng1,
+                    lng2);
+            }
+        }else{
+            if (!string.IsNullOrWhiteSpace(SearchSSID) || !string.IsNullOrWhiteSpace(SearchBSSID) ||
+            DateStart.HasValue || DateEnd.HasValue)
+            {
+                await JS.InvokeVoidAsync("filterWifiPoints",
+                     string.IsNullOrWhiteSpace(SearchSSID) ? null : SearchSSID,
+                     string.IsNullOrWhiteSpace(SearchBSSID) ? null : SearchBSSID,
+                     DateStart.HasValue ? DateStart.Value.ToString("O") : null,
+                     DateEnd.HasValue ? DateEnd.Value.ToString("O") : null);
+            }
+        }
+
+    }
+
+    private async Task Reset()
+    {
+        DateStart = null;
+        DateEnd = null;
+        SearchBSSID = "";
+        SearchSSID = "";
+        latitude1 = "";
+        latitude2 = "";
+        longitude1 = "";
+        longitude2 = "";
+        IsSearchWorldwide = false;
+        await JS.InvokeVoidAsync("refreshMap");
+    }
+
+    private void ToggleSidebar()
+    {
+        IsSidebarOpen = !IsSidebarOpen;
+    }
+
+    [JSInvokable]
+    public void UpdateSearchList(List<WifiListModel> actualPoints)
+    {
+        wifiShowList = actualPoints.OrderBy(point => point.Ssid).ToList();
+        StateHasChanged();
+    }
+
+    private async Task GoToPointByBssid(string bssid)
+    {
+        await JS.InvokeVoidAsync("setMapToPointByBssid", bssid);
+    }
+}

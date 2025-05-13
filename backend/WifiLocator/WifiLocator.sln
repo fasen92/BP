@@ -1,0 +1,44 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35506.116
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WifiLocator.API", "WifiLocator.API.csproj", "{1D06B3D9-32A0-44B9-BAC6-D86CDC036BC2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8337C573-DEF6-4E15-B1C7-2E0E3B703295} = {8337C573-DEF6-4E15-B1C7-2E0E3B703295}
+		{ABC987E3-E833-4724-BCA9-49101DB1472B} = {ABC987E3-E833-4724-BCA9-49101DB1472B}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WifiLocator.Core", "..\WifiLocator.Core\WifiLocator.Core.csproj", "{8337C573-DEF6-4E15-B1C7-2E0E3B703295}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WifiLocator.Infrastructure", "..\WifiLocator.Infrastructure\WifiLocator.Infrastructure.csproj", "{ABC987E3-E833-4724-BCA9-49101DB1472B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WifiLocator.Benchmark", "..\WifiLocator.Benchmark\WifiLocator.Benchmark.csproj", "{B6119266-D75E-4B65-BECD-E74655A7F83A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1D06B3D9-32A0-44B9-BAC6-D86CDC036BC2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D06B3D9-32A0-44B9-BAC6-D86CDC036BC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D06B3D9-32A0-44B9-BAC6-D86CDC036BC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D06B3D9-32A0-44B9-BAC6-D86CDC036BC2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8337C573-DEF6-4E15-B1C7-2E0E3B703295}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8337C573-DEF6-4E15-B1C7-2E0E3B703295}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8337C573-DEF6-4E15-B1C7-2E0E3B703295}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8337C573-DEF6-4E15-B1C7-2E0E3B703295}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ABC987E3-E833-4724-BCA9-49101DB1472B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ABC987E3-E833-4724-BCA9-49101DB1472B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ABC987E3-E833-4724-BCA9-49101DB1472B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ABC987E3-E833-4724-BCA9-49101DB1472B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6119266-D75E-4B65-BECD-E74655A7F83A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6119266-D75E-4B65-BECD-E74655A7F83A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6119266-D75E-4B65-BECD-E74655A7F83A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6119266-D75E-4B65-BECD-E74655A7F83A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
